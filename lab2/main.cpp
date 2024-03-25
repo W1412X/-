@@ -21,7 +21,6 @@ Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 
 Eigen::Matrix4f get_model_matrix(const Eigen::Vector3f& axis, float rotation_angle)
 {
-    // Normalize the input axis vector
     Eigen::Vector3f normalized_axis = axis.normalized();//化为单位向量
     float x = normalized_axis.x();
     float y = normalized_axis.y();
@@ -29,26 +28,22 @@ Eigen::Matrix4f get_model_matrix(const Eigen::Vector3f& axis, float rotation_ang
 
     float cos_theta = std::cos(M_PI * rotation_angle / 180);
     float sin_theta = std::sin(M_PI * rotation_angle / 180);
-    float one_minus_cos_theta = 1 - cos_theta;
+    float one_mius = 1 - cos_theta;
 
     Eigen::Matrix4f model = Eigen::Matrix4f::Identity();
+    model(0, 0) = cos_theta + x * x * one_mius;
+    model(0, 1) = x * y * one_mius - z * sin_theta;
+    model(0, 2) = x * z * one_mius + y * sin_theta;
 
-    // Fill in the rotation matrix elements for arbitrary axis rotation
-    model(0, 0) = cos_theta + x * x * one_minus_cos_theta;
-    model(0, 1) = x * y * one_minus_cos_theta - z * sin_theta;
-    model(0, 2) = x * z * one_minus_cos_theta + y * sin_theta;
+    model(1, 0) = y * x * one_mius + z * sin_theta;
+    model(1, 1) = cos_theta + y * y * one_mius;
+    model(1, 2) = y * z * one_mius - x * sin_theta;
 
-    model(1, 0) = y * x * one_minus_cos_theta + z * sin_theta;
-    model(1, 1) = cos_theta + y * y * one_minus_cos_theta;
-    model(1, 2) = y * z * one_minus_cos_theta - x * sin_theta;
-
-    model(2, 0) = z * x * one_minus_cos_theta - y * sin_theta;
-    model(2, 1) = z * y * one_minus_cos_theta + x * sin_theta;
-    model(2, 2) = cos_theta + z * z * one_minus_cos_theta;
+    model(2, 0) = z * x * one_mius - y * sin_theta;
+    model(2, 1) = z * y * one_mius + x * sin_theta;
+    model(2, 2) = cos_theta + z * z * one_mius;
 
     model(3, 3) = 1;
-
-    // Return the model matrix for arbitrary axis rotation
     return model;
 }
 
@@ -87,10 +82,8 @@ Eigen::Matrix4f get_model_matrix(float rotation_angle)
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
 {
     Eigen::Matrix4f projection = Eigen::Matrix4f::Zero();
-    // Calculate the parameters for constructing the projection matrix
     float tan_half_fov = std::tan(eye_fov / 2);
     float range = zNear - zFar;
-    // Fill in the projection matrix elements
     projection(0, 0) = 1 / (tan_half_fov * aspect_ratio);
     projection(1, 1) = 1 / tan_half_fov;
     projection(2, 2) = (-zNear - zFar) / range;
@@ -133,19 +126,21 @@ int main(int argc, const char** argv)
     printf("Which Mode(0->绕z,1->绕自定义):");
     int mode=0;
     std::cin>>mode;
-    float a_x,a_y,a_z;
-    std::cout<<"输入向量:";
-    std::cin>>a_x>>a_y>>a_z;
-    std::cout<<"输入角度:";
-    float angle_;
-    std::cin>>angle_;
-    Eigen::Vector3f tmp(a_x,a_y,a_z);
+        float a_x,a_y,a_z;
+        float angle_;
+    if(mode!=0){
+        std::cout<<"输入向量:";
+        std::cin>>a_x>>a_y>>a_z;
+        std::cout<<"输入角度:";
+        std::cin>>angle_;
+        Eigen::Vector3f tmp(a_x,a_y,a_z);
+    }
     if (command_line) {
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
         if(mode==0){
             r.set_model(get_model_matrix(angle));
         }else{
-            r.set_model(get_model_matrix(tmp,angle));
+            r.set_model(get_model_matrix(tmp,angle_));
         }
 
         r.set_view(get_view_matrix(eye_pos));
@@ -165,7 +160,7 @@ int main(int argc, const char** argv)
         if(mode==0){
             r.set_model(get_model_matrix(angle));
         }else{
-            r.set_model(get_model_matrix(tmp,angle));
+            r.set_model(get_model_matrix(tmp,angle_));
         }
         r.set_view(get_view_matrix(eye_pos));
         r.set_projection(get_projection_matrix(45, 1, 0.1, 50));
